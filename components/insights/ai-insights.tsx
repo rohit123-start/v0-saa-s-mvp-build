@@ -12,6 +12,7 @@ import { mockUsers, mockTasks, type User } from "@/lib/mock-data"
 export function AIInsights() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [insights, setInsights] = useState<string | null>(null)
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -19,7 +20,14 @@ export function AIInsights() {
     const mockUser = localStorage.getItem("mockUser")
     if (mockUser) {
       const userData = JSON.parse(mockUser)
-      const user = mockUsers.find((u) => u.email === userData.email) || mockUsers[0]
+      // This fixes the bug where manager@company.com wasn't being recognized as manager
+      const user: User = {
+        id: userData.role === "manager" ? "user-4" : "user-1",
+        email: userData.email,
+        name: userData.name || userData.email.split("@")[0],
+        role: userData.role,
+        organizationId: "org-1",
+      }
       setCurrentUser(user)
     }
   }, [])
@@ -29,7 +37,6 @@ export function AIInsights() {
     setError(null)
 
     try {
-      // Call AI insights API
       const response = await fetch("/api/insights", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -46,7 +53,11 @@ export function AIInsights() {
       }
 
       const data = await response.json()
+
       setInsights(data.insights)
+      if (data.teamMembers) {
+        setTeamMembers(data.teamMembers)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
@@ -109,7 +120,7 @@ export function AIInsights() {
           {currentUser.role === "employee" ? (
             <EmployeeInsights insights={insights} tasks={mockTasks.filter((t) => t.employeeId === currentUser.id)} />
           ) : (
-            <ManagerInsights insights={insights} users={mockUsers} tasks={mockTasks} />
+            <ManagerInsights insights={insights} users={mockUsers} tasks={mockTasks} teamMembers={teamMembers} />
           )}
         </>
       )}
