@@ -1,12 +1,13 @@
 export type UserRole = "employee" | "manager"
 
-export type TaskStatus = "planned" | "done" | "blocked"
+export type EntryMood = "productive" | "learning" | "challenging" | "collaborative"
 
-export interface Task {
+export interface Entry {
   id: string
   title: string
   description?: string
-  status: TaskStatus
+  reflection?: string
+  mood: EntryMood
   date: string
   employeeId: string
   createdAt: string
@@ -19,6 +20,7 @@ export interface User {
   name: string
   role: UserRole
   organizationId: string
+  avatar?: string
 }
 
 export interface Organization {
@@ -65,50 +67,56 @@ export const mockUsers: User[] = [
   },
 ]
 
-export const mockTasks: Task[] = [
+export const mockEntries: Entry[] = [
   {
-    id: "task-1",
-    title: "Design new feature",
-    description: "Create mockups for the new dashboard",
-    status: "done",
+    id: "entry-1",
+    title: "Worked on dashboard redesign",
+    description: "Made progress on the new analytics dashboard layout",
+    reflection: "Feeling good about the direction. The team feedback was helpful.",
+    mood: "productive",
     date: "2024-01-15",
     employeeId: "user-1",
     createdAt: "2024-01-15T09:00:00Z",
     updatedAt: "2024-01-15T17:00:00Z",
   },
   {
-    id: "task-2",
-    title: "Code review",
-    status: "planned",
+    id: "entry-2",
+    title: "Deep dive into React patterns",
+    description: "Spent time learning about compound components",
+    reflection: "This will help with the component library we're building.",
+    mood: "learning",
     date: "2024-01-16",
     employeeId: "user-1",
     createdAt: "2024-01-16T09:00:00Z",
     updatedAt: "2024-01-16T09:00:00Z",
   },
   {
-    id: "task-3",
-    title: "Bug fix: Login issue",
-    description: "Fix authentication redirect bug",
-    status: "blocked",
+    id: "entry-3",
+    title: "Debugging authentication flow",
+    description: "Ran into some tricky edge cases with token refresh",
+    reflection: "Need to pair with someone tomorrow to work through this.",
+    mood: "challenging",
     date: "2024-01-15",
     employeeId: "user-2",
     createdAt: "2024-01-15T10:00:00Z",
     updatedAt: "2024-01-15T14:00:00Z",
   },
   {
-    id: "task-4",
-    title: "Update documentation",
-    status: "done",
+    id: "entry-4",
+    title: "Updated API documentation",
+    description: "Added examples for all new endpoints",
+    mood: "productive",
     date: "2024-01-15",
     employeeId: "user-3",
     createdAt: "2024-01-15T11:00:00Z",
     updatedAt: "2024-01-15T16:00:00Z",
   },
   {
-    id: "task-5",
-    title: "Team meeting",
-    description: "Weekly sync",
-    status: "done",
+    id: "entry-5",
+    title: "Sprint planning session",
+    description: "Collaborated with product on Q2 roadmap",
+    reflection: "Great alignment across teams. Excited about upcoming features.",
+    mood: "collaborative",
     date: "2024-01-16",
     employeeId: "user-2",
     createdAt: "2024-01-16T14:00:00Z",

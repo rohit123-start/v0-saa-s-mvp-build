@@ -3,36 +3,38 @@
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks, startOfMonth, endOfMonth } from "date-fns"
-import { TaskCell } from "./task-cell"
-import type { Task, User } from "@/lib/mock-data"
+import { EntryCell } from "./entry-cell"
+import type { Entry, User } from "@/lib/mock-data"
 
 interface BoardViewProps {
   viewType: "day" | "week" | "month"
   currentDate: Date
   users: User[]
-  tasks: Task[]
+  entries: Entry[]
   currentUser: User | null
-  onAddTask: (task: Omit<Task, "id" | "createdAt" | "updatedAt">) => void
-  onUpdateTask: (taskId: string, updates: Partial<Task>) => void
-  onDeleteTask: (taskId: string) => void
+  onAddEntry: (entry: Omit<Entry, "id" | "createdAt" | "updatedAt">) => void
+  onUpdateEntry: (entryId: string, updates: Partial<Entry>) => void
+  onDeleteEntry: (entryId: string) => void
+  onEntryClick: (entry: Entry) => void
 }
 
 export function BoardView({
   viewType,
   currentDate,
   users,
-  tasks,
+  entries,
   currentUser,
-  onAddTask,
-  onUpdateTask,
-  onDeleteTask,
+  onAddEntry,
+  onUpdateEntry,
+  onDeleteEntry,
+  onEntryClick,
 }: BoardViewProps) {
   const employees = users.filter((u) => u.role === "employee")
 
   const getDefaultColumnWidth = () => {
-    if (viewType === "day") return 128
-    if (viewType === "week") return 192
-    return 256
+    if (viewType === "day") return 140
+    if (viewType === "week") return 220
+    return 280
   }
 
   const [columnWidths, setColumnWidths] = useState<number[]>([])
@@ -41,7 +43,7 @@ export function BoardView({
   const [isDragging, setIsDragging] = useState(false)
   const startPos = useRef<number>(0)
   const startSize = useRef<number>(0)
-  const dragThreshold = 3 // pixels to move before starting resize
+  const dragThreshold = 3
 
   const getDates = () => {
     if (viewType === "day") {
@@ -83,7 +85,7 @@ export function BoardView({
     setIsResizing({ type: "row", index: employeeId })
     setIsDragging(false)
     startPos.current = e.clientY
-    startSize.current = rowHeights[employeeId] || 120
+    startSize.current = rowHeights[employeeId] || 140
   }
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -91,12 +93,9 @@ export function BoardView({
 
     if (isResizing.type === "column") {
       const diff = e.clientX - startPos.current
-
       if (!isDragging && Math.abs(diff) < dragThreshold) return
-
       if (!isDragging) setIsDragging(true)
-
-      const newWidth = Math.max(80, startSize.current + diff)
+      const newWidth = Math.max(100, startSize.current + diff)
       setColumnWidths((prev) => {
         const updated = [...prev]
         updated[isResizing.index as number] = newWidth
@@ -104,12 +103,9 @@ export function BoardView({
       })
     } else {
       const diff = e.clientY - startPos.current
-
       if (!isDragging && Math.abs(diff) < dragThreshold) return
-
       if (!isDragging) setIsDragging(true)
-
-      const newHeight = Math.max(80, startSize.current + diff)
+      const newHeight = Math.max(100, startSize.current + diff)
       setRowHeights((prev) => ({
         ...prev,
         [isResizing.index]: newHeight,
@@ -137,44 +133,46 @@ export function BoardView({
     if (viewType === "day") {
       return format(date, "EEE\nMMM d")
     } else if (viewType === "week") {
-      return `${format(date.start, "MMM d")}\n${format(date.end, "MMM d")}`
+      return `${format(date.start, "MMM d")} - ${format(date.end, "MMM d")}`
     } else {
-      return format(date.start, "MMMM\nyyyy")
+      return format(date.start, "MMMM yyyy")
     }
   }
 
-  const getTasksForCell = (employeeId: string, dateOrRange: any) => {
+  const getEntriesForCell = (employeeId: string, dateOrRange: any) => {
     if (viewType === "day") {
       const dateStr = format(dateOrRange, "yyyy-MM-dd")
-      return tasks.filter((task) => task.employeeId === employeeId && task.date === dateStr)
+      return entries.filter((entry) => entry.employeeId === employeeId && entry.date === dateStr)
     } else {
       const start = dateOrRange.start
       const end = dateOrRange.end
       const daysInRange = eachDayOfInterval({ start, end })
       const dateStrs = daysInRange.map((d) => format(d, "yyyy-MM-dd"))
-      return tasks.filter((task) => task.employeeId === employeeId && dateStrs.includes(task.date))
+      return entries.filter((entry) => entry.employeeId === employeeId && dateStrs.includes(entry.date))
     }
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border bg-card">
+    <div className="overflow-x-auto rounded-xl border border-border/60 bg-card shadow-sm">
       <div className="min-w-max">
         {/* Header Row */}
-        <div className="flex border-b bg-muted/50 sticky top-0">
-          <div className="w-48 shrink-0 border-r p-3 font-semibold">Employee</div>
+        <div className="flex border-b border-border/60 bg-muted/30 sticky top-0">
+          <div className="w-52 shrink-0 border-r border-border/60 p-4 font-medium text-muted-foreground">
+            Team Member
+          </div>
           {dates.map((date, idx) => (
             <div key={idx} className="relative flex items-center">
               <div
                 style={{ width: columnWidths[idx] || getDefaultColumnWidth() }}
-                className="shrink-0 border-r p-3 text-center text-sm font-medium last:border-r-0"
+                className="shrink-0 border-r border-border/60 p-4 text-center text-sm font-medium text-muted-foreground last:border-r-0"
               >
                 <div className="whitespace-pre-line">{getDateFormat(date)}</div>
               </div>
               <div
-                className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary/30 transition-colors z-10 group"
+                className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary/20 transition-colors z-10 group"
                 onMouseDown={(e) => handleColumnMouseDown(idx, e)}
               >
-                <div className="absolute right-0 top-0 bottom-0 w-0.5 bg-border group-hover:bg-primary transition-colors" />
+                <div className="absolute right-0 top-0 bottom-0 w-0.5 bg-transparent group-hover:bg-primary/40 transition-colors" />
               </div>
             </div>
           ))}
@@ -183,37 +181,49 @@ export function BoardView({
         {/* Employee Rows */}
         {employees.map((employee) => (
           <div key={employee.id} className="relative">
-            <div className="flex border-b last:border-b-0" style={{ minHeight: rowHeights[employee.id] || 120 }}>
-              <div className="w-48 shrink-0 border-r p-3 flex items-start">
-                <div>
-                  <div className="font-medium">{employee.name}</div>
-                  <div className="text-xs text-muted-foreground">{employee.email}</div>
+            <div
+              className="flex border-b border-border/40 last:border-b-0 hover:bg-muted/20 transition-colors"
+              style={{ minHeight: rowHeights[employee.id] || 140 }}
+            >
+              <div className="w-52 shrink-0 border-r border-border/60 p-4 flex items-start">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-sm">
+                    {employee.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </div>
+                  <div>
+                    <div className="font-medium text-foreground">{employee.name}</div>
+                    <div className="text-xs text-muted-foreground">{employee.email}</div>
+                  </div>
                 </div>
               </div>
               {dates.map((date, idx) => (
                 <div
                   key={idx}
                   style={{ width: columnWidths[idx] || getDefaultColumnWidth() }}
-                  className="shrink-0 border-r p-2 last:border-r-0"
+                  className="shrink-0 border-r border-border/40 p-3 last:border-r-0"
                 >
-                  <TaskCell
+                  <EntryCell
                     date={viewType === "day" ? date : date.start}
                     dateRange={viewType !== "day" ? date : undefined}
                     employeeId={employee.id}
-                    tasks={getTasksForCell(employee.id, date)}
+                    entries={getEntriesForCell(employee.id, date)}
                     currentUser={currentUser}
-                    onAddTask={onAddTask}
-                    onUpdateTask={onUpdateTask}
-                    onDeleteTask={onDeleteTask}
+                    onAddEntry={onAddEntry}
+                    onUpdateEntry={onUpdateEntry}
+                    onDeleteEntry={onDeleteEntry}
+                    onEntryClick={onEntryClick}
                   />
                 </div>
               ))}
             </div>
             <div
-              className="absolute left-0 right-0 bottom-0 h-2 cursor-row-resize hover:bg-primary/30 transition-colors z-10 group"
+              className="absolute left-0 right-0 bottom-0 h-2 cursor-row-resize hover:bg-primary/20 transition-colors z-10 group"
               onMouseDown={(e) => handleRowMouseDown(employee.id, e)}
             >
-              <div className="absolute left-0 right-0 bottom-0 h-0.5 bg-border group-hover:bg-primary transition-colors" />
+              <div className="absolute left-0 right-0 bottom-0 h-0.5 bg-transparent group-hover:bg-primary/40 transition-colors" />
             </div>
           </div>
         ))}

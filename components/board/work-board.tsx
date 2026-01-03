@@ -5,8 +5,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { BoardView } from "./board-view"
-import { mockUsers, mockTasks, type Task, type User } from "@/lib/mock-data"
+import { mockUsers, mockEntries, type Entry, type User } from "@/lib/mock-data"
 import { addWeeks, subWeeks, addMonths, subMonths, format } from "date-fns"
+import { EntryDrawer } from "./entry-drawer"
 
 type ViewType = "day" | "week" | "month"
 
@@ -14,36 +15,62 @@ export function WorkBoard() {
   const [viewType, setViewType] = useState<ViewType>("week")
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [users] = useState<User[]>(mockUsers)
-  const [tasks, setTasks] = useState<Task[]>(mockTasks)
+  const [entries, setEntries] = useState<Entry[]>(mockEntries)
   const [currentDate, setCurrentDate] = useState<Date>(new Date())
+  const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
   useEffect(() => {
     const mockUser = localStorage.getItem("mockUser")
     if (mockUser) {
       const userData = JSON.parse(mockUser)
-      const user = users.find((u) => u.email === userData.email) || users[0]
-      setCurrentUser(user)
+      const existingUser = users.find((u) => u.email === userData.email)
+      if (existingUser) {
+        setCurrentUser(existingUser)
+      } else {
+        setCurrentUser({
+          id: `user-${Date.now()}`,
+          email: userData.email,
+          name: userData.email.split("@")[0],
+          role: userData.role,
+          organizationId: "org-1",
+        })
+      }
     }
   }, [users])
 
-  const handleAddTask = (task: Omit<Task, "id" | "createdAt" | "updatedAt">) => {
-    const newTask: Task = {
-      ...task,
-      id: `task-${Date.now()}`,
+  const handleAddEntry = (entry: Omit<Entry, "id" | "createdAt" | "updatedAt">) => {
+    const newEntry: Entry = {
+      ...entry,
+      id: `entry-${Date.now()}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
-    setTasks([...tasks, newTask])
+    setEntries([...entries, newEntry])
   }
 
-  const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
-    setTasks(
-      tasks.map((task) => (task.id === taskId ? { ...task, ...updates, updatedAt: new Date().toISOString() } : task)),
+  const handleUpdateEntry = (entryId: string, updates: Partial<Entry>) => {
+    setEntries(
+      entries.map((entry) =>
+        entry.id === entryId ? { ...entry, ...updates, updatedAt: new Date().toISOString() } : entry,
+      ),
     )
+    if (selectedEntry?.id === entryId) {
+      setSelectedEntry({ ...selectedEntry, ...updates } as Entry)
+    }
   }
 
-  const handleDeleteTask = (taskId: string) => {
-    setTasks(tasks.filter((task) => task.id !== taskId))
+  const handleDeleteEntry = (entryId: string) => {
+    setEntries(entries.filter((entry) => entry.id !== entryId))
+    if (selectedEntry?.id === entryId) {
+      setSelectedEntry(null)
+      setIsDrawerOpen(false)
+    }
+  }
+
+  const handleEntryClick = (entry: Entry) => {
+    setSelectedEntry(entry)
+    setIsDrawerOpen(true)
   }
 
   const handlePrevious = () => {
@@ -77,22 +104,28 @@ export function WorkBoard() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Tabs value={viewType} onValueChange={(v) => setViewType(v as ViewType)}>
-          <TabsList>
-            <TabsTrigger value="day">Day</TabsTrigger>
-            <TabsTrigger value="week">Week</TabsTrigger>
-            <TabsTrigger value="month">Month</TabsTrigger>
+          <TabsList className="bg-muted/50">
+            <TabsTrigger value="day" className="data-[state=active]:bg-card">
+              Day
+            </TabsTrigger>
+            <TabsTrigger value="week" className="data-[state=active]:bg-card">
+              Week
+            </TabsTrigger>
+            <TabsTrigger value="month" className="data-[state=active]:bg-card">
+              Month
+            </TabsTrigger>
           </TabsList>
         </Tabs>
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={handlePrevious}>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={handlePrevious} className="hover:bg-muted">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="min-w-[200px] text-center font-medium">{getDateRangeLabel()}</div>
-          <Button variant="outline" size="icon" onClick={handleNext}>
+          <div className="min-w-[200px] text-center font-medium text-foreground/80">{getDateRangeLabel()}</div>
+          <Button variant="ghost" size="icon" onClick={handleNext} className="hover:bg-muted">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -102,11 +135,22 @@ export function WorkBoard() {
         viewType={viewType}
         currentDate={currentDate}
         users={users}
-        tasks={tasks}
+        entries={entries}
         currentUser={currentUser}
-        onAddTask={handleAddTask}
-        onUpdateTask={handleUpdateTask}
-        onDeleteTask={handleDeleteTask}
+        onAddEntry={handleAddEntry}
+        onUpdateEntry={handleUpdateEntry}
+        onDeleteEntry={handleDeleteEntry}
+        onEntryClick={handleEntryClick}
+      />
+
+      <EntryDrawer
+        entry={selectedEntry}
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        currentUser={currentUser}
+        users={users}
+        onUpdate={handleUpdateEntry}
+        onDelete={handleDeleteEntry}
       />
     </div>
   )

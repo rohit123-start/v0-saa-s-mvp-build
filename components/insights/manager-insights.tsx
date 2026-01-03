@@ -2,166 +2,141 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, Activity, AlertTriangle, Sparkles } from "lucide-react"
-import type { Task, User } from "@/lib/mock-data"
+import { Users, Activity, Sparkles, BookOpen, Mountain } from "lucide-react"
+import type { Entry, User } from "@/lib/mock-data"
 import { startOfWeek, startOfMonth, format } from "date-fns"
 
 interface ManagerInsightsProps {
   insights: string
   users: User[]
-  tasks: Task[]
+  entries: Entry[]
   teamMembers?: Array<{
     id: string
     name: string
     email: string
-    totalTasks: number
-    completed: number
-    planned: number
-    blocked: number
-    recentTasks: Array<{
+    totalEntries: number
+    moodCounts: Record<string, number>
+    recentEntries: Array<{
       title: string
       description: string
-      status: string
+      mood: string
       date: string
+      reflection?: string
     }>
   }>
 }
 
-export function ManagerInsights({ insights, users, tasks, teamMembers }: ManagerInsightsProps) {
+const moodIcons: Record<string, any> = {
+  productive: Sparkles,
+  learning: BookOpen,
+  challenging: Mountain,
+  collaborative: Users,
+}
+
+export function ManagerInsights({ insights, users, entries, teamMembers }: ManagerInsightsProps) {
   const employees = users.filter((u) => u.role === "employee")
 
   const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd")
   const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd")
 
-  const weeklyTasks = tasks.filter((t) => t.date >= weekStart)
-  const monthlyTasks = tasks.filter((t) => t.date >= monthStart)
+  const weeklyEntries = entries.filter((e) => e.date >= weekStart)
+  const monthlyEntries = entries.filter((e) => e.date >= monthStart)
 
-  const getStatusCounts = (taskList: Task[]) => {
-    return taskList.reduce(
-      (acc, task) => {
-        acc[task.status]++
+  const getMoodCounts = (entryList: Entry[]) => {
+    return entryList.reduce(
+      (acc, entry) => {
+        acc[entry.mood]++
         return acc
       },
-      { planned: 0, done: 0, blocked: 0 } as Record<Task["status"], number>,
+      { productive: 0, learning: 0, challenging: 0, collaborative: 0 } as Record<Entry["mood"], number>,
     )
   }
 
-  const weeklyStats = getStatusCounts(weeklyTasks)
-  const monthlyStats = getStatusCounts(monthlyTasks)
+  const weeklyMoods = getMoodCounts(weeklyEntries)
+  const monthlyMoods = getMoodCounts(monthlyEntries)
 
   return (
     <Tabs defaultValue="overview" className="space-y-6">
-      <TabsList>
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="team-members">Team Members</TabsTrigger>
+      <TabsList className="bg-muted/50">
+        <TabsTrigger value="overview" className="data-[state=active]:bg-card">
+          Overview
+        </TabsTrigger>
+        <TabsTrigger value="team-members" className="data-[state=active]:bg-card">
+          Team Members
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview" className="space-y-6">
         <div className="grid gap-6 md:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Users className="h-4 w-4 text-primary" />
                 Team Size
               </CardTitle>
-              <CardDescription>Active employees</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{employees.length}</div>
+              <div className="text-3xl font-semibold">{employees.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">Active team members</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Activity className="h-4 w-4 text-primary" />
                 This Week
               </CardTitle>
-              <CardDescription>Weekly task summary</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span>Done:</span>
-                  <span className="font-semibold">{weeklyStats.done}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Planned:</span>
-                  <span className="font-semibold">{weeklyStats.planned}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Blocked:</span>
-                  <span className="font-semibold">{weeklyStats.blocked}</span>
-                </div>
-              </div>
+              <div className="text-3xl font-semibold">{weeklyEntries.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">Work log entries</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <BookOpen className="h-4 w-4 text-primary" />
                 This Month
               </CardTitle>
-              <CardDescription>Monthly task summary</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span>Done:</span>
-                  <span className="font-semibold">{monthlyStats.done}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Planned:</span>
-                  <span className="font-semibold">{monthlyStats.planned}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Blocked:</span>
-                  <span className="font-semibold">{monthlyStats.blocked}</span>
-                </div>
-              </div>
+              <div className="text-3xl font-semibold">{monthlyEntries.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">Work log entries</p>
             </CardContent>
           </Card>
         </div>
 
-        <Card>
+        <Card className="border-border/60">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              AI Team Analysis
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Sparkles className="h-4 w-4 text-primary" />
+              AI Team Summary
             </CardTitle>
-            <CardDescription>AI-generated insights for team performance</CardDescription>
+            <CardDescription>Qualitative insights about team work patterns</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="prose prose-sm max-w-none">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">{insights}</p>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/80">{insights}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border/60">
           <CardHeader>
-            <CardTitle>Task Distribution</CardTitle>
-            <CardDescription>Monthly overview across team members</CardDescription>
+            <CardTitle className="text-base">Team Mood Patterns</CardTitle>
+            <CardDescription>How the team's work has felt this month</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {employees.map((employee) => {
-                const employeeTasks = monthlyTasks.filter((t) => t.employeeId === employee.id)
-                const employeeStats = getStatusCounts(employeeTasks)
-                const totalTasks = employeeStats.done + employeeStats.planned + employeeStats.blocked
-
+            <div className="grid gap-4 md:grid-cols-4">
+              {Object.entries(monthlyMoods).map(([mood, count]) => {
+                const Icon = moodIcons[mood]
                 return (
-                  <div key={employee.id} className="flex items-center justify-between rounded-lg border p-3">
-                    <div>
-                      <div className="font-medium">{employee.name}</div>
-                      <div className="text-xs text-muted-foreground">{totalTasks} total tasks this month</div>
-                    </div>
-                    <div className="flex gap-4 text-sm">
-                      <span className="text-[var(--status-done)]">✓ {employeeStats.done}</span>
-                      <span className="text-[var(--status-planned)]">◯ {employeeStats.planned}</span>
-                      <span className="text-[var(--status-blocked)]">⚠ {employeeStats.blocked}</span>
-                    </div>
+                  <div key={mood} className={`p-4 rounded-lg bg-[var(--mood-${mood})]/10 text-center`}>
+                    <Icon className={`h-5 w-5 mx-auto mb-2 text-[var(--mood-${mood})]`} />
+                    <div className="text-2xl font-semibold">{count}</div>
+                    <div className="text-xs text-muted-foreground capitalize">{mood}</div>
                   </div>
                 )
               })}
@@ -174,49 +149,53 @@ export function ManagerInsights({ insights, users, tasks, teamMembers }: Manager
         {teamMembers && teamMembers.length > 0 ? (
           <div className="space-y-4">
             {teamMembers.map((member) => (
-              <Card key={member.id}>
+              <Card key={member.id} className="border-border/60">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>{member.name}</CardTitle>
-                      <CardDescription>{member.email}</CardDescription>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
+                        {member.name
+                          .split(" ")
+                          .map((n: string) => n[0])
+                          .join("")}
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">{member.name}</CardTitle>
+                        <CardDescription>{member.email}</CardDescription>
+                      </div>
                     </div>
-                    <div className="flex gap-3 text-sm">
-                      <span className="text-[var(--status-done)]">✓ {member.completed}</span>
-                      <span className="text-[var(--status-planned)]">◯ {member.planned}</span>
-                      <span className="text-[var(--status-blocked)]">⚠ {member.blocked}</span>
-                    </div>
+                    <div className="text-sm text-muted-foreground">{member.totalEntries} entries</div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {member.recentTasks.length > 0 ? (
+                  {member.recentEntries.length > 0 ? (
                     <div className="space-y-3">
-                      <div className="text-sm font-medium text-muted-foreground">Recent Tasks:</div>
-                      {member.recentTasks.map((task, idx) => (
-                        <div key={idx} className="flex items-start gap-3 rounded-lg border p-3">
-                          <span
-                            className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${
-                              task.status === "done"
-                                ? "bg-[var(--status-done)]"
-                                : task.status === "planned"
-                                  ? "bg-[var(--status-planned)]"
-                                  : "bg-[var(--status-blocked)]"
-                            }`}
-                          />
-                          <div className="flex-1">
-                            <div className="font-medium">{task.title}</div>
-                            {task.description && (
-                              <div className="mt-1 text-sm text-muted-foreground">{task.description}</div>
-                            )}
-                            <div className="mt-1 text-xs text-muted-foreground">
-                              {format(new Date(task.date), "MMM d, yyyy")}
+                      <div className="text-sm font-medium text-muted-foreground">Recent Work:</div>
+                      {member.recentEntries.map((entry: any, idx: number) => {
+                        const Icon = moodIcons[entry.mood] || Sparkles
+                        return (
+                          <div key={idx} className="flex items-start gap-3 rounded-lg border border-border/60 p-3">
+                            <Icon className={`h-4 w-4 mt-0.5 text-[var(--mood-${entry.mood})]`} />
+                            <div className="flex-1">
+                              <div className="font-medium text-sm">{entry.title}</div>
+                              {entry.description && (
+                                <div className="mt-1 text-sm text-muted-foreground">{entry.description}</div>
+                              )}
+                              {entry.reflection && (
+                                <div className="mt-2 text-sm italic text-foreground/60 bg-muted/50 p-2 rounded">
+                                  "{entry.reflection}"
+                                </div>
+                              )}
+                              <div className="mt-2 text-xs text-muted-foreground">
+                                {format(new Date(entry.date), "MMM d, yyyy")}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   ) : (
-                    <div className="text-sm text-muted-foreground">No tasks yet</div>
+                    <div className="text-sm text-muted-foreground">No entries yet</div>
                   )}
                 </CardContent>
               </Card>
@@ -225,54 +204,60 @@ export function ManagerInsights({ insights, users, tasks, teamMembers }: Manager
         ) : (
           <div className="space-y-4">
             {employees.map((employee) => {
-              const employeeTasks = tasks.filter((t) => t.employeeId === employee.id)
-              const recentTasks = employeeTasks.slice(0, 5)
-              const employeeStats = getStatusCounts(employeeTasks)
+              const employeeEntries = entries.filter((e) => e.employeeId === employee.id)
+              const recentEntries = employeeEntries.slice(0, 5)
 
               return (
-                <Card key={employee.id}>
+                <Card key={employee.id} className="border-border/60">
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle>{employee.name}</CardTitle>
-                        <CardDescription>{employee.email}</CardDescription>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
+                          {employee.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </div>
+                        <div>
+                          <CardTitle className="text-base">{employee.name}</CardTitle>
+                          <CardDescription>{employee.email}</CardDescription>
+                        </div>
                       </div>
-                      <div className="flex gap-3 text-sm">
-                        <span className="text-[var(--status-done)]">✓ {employeeStats.done}</span>
-                        <span className="text-[var(--status-planned)]">◯ {employeeStats.planned}</span>
-                        <span className="text-[var(--status-blocked)]">⚠ {employeeStats.blocked}</span>
-                      </div>
+                      <div className="text-sm text-muted-foreground">{employeeEntries.length} entries</div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {recentTasks.length > 0 ? (
+                    {recentEntries.length > 0 ? (
                       <div className="space-y-3">
-                        <div className="text-sm font-medium text-muted-foreground">Recent Tasks:</div>
-                        {recentTasks.map((task) => (
-                          <div key={task.id} className="flex items-start gap-3 rounded-lg border p-3">
-                            <span
-                              className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${
-                                task.status === "done"
-                                  ? "bg-[var(--status-done)]"
-                                  : task.status === "planned"
-                                    ? "bg-[var(--status-planned)]"
-                                    : "bg-[var(--status-blocked)]"
-                              }`}
-                            />
-                            <div className="flex-1">
-                              <div className="font-medium">{task.title}</div>
-                              {task.description && (
-                                <div className="mt-1 text-sm text-muted-foreground">{task.description}</div>
-                              )}
-                              <div className="mt-1 text-xs text-muted-foreground">
-                                {format(new Date(task.date), "MMM d, yyyy")}
+                        <div className="text-sm font-medium text-muted-foreground">Recent Work:</div>
+                        {recentEntries.map((entry) => {
+                          const Icon = moodIcons[entry.mood]
+                          return (
+                            <div
+                              key={entry.id}
+                              className="flex items-start gap-3 rounded-lg border border-border/60 p-3"
+                            >
+                              <Icon className={`h-4 w-4 mt-0.5 text-[var(--mood-${entry.mood})]`} />
+                              <div className="flex-1">
+                                <div className="font-medium text-sm">{entry.title}</div>
+                                {entry.description && (
+                                  <div className="mt-1 text-sm text-muted-foreground">{entry.description}</div>
+                                )}
+                                {entry.reflection && (
+                                  <div className="mt-2 text-sm italic text-foreground/60 bg-muted/50 p-2 rounded">
+                                    "{entry.reflection}"
+                                  </div>
+                                )}
+                                <div className="mt-2 text-xs text-muted-foreground">
+                                  {format(new Date(entry.date), "MMM d, yyyy")}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     ) : (
-                      <div className="text-sm text-muted-foreground">No tasks yet</div>
+                      <div className="text-sm text-muted-foreground">No entries yet</div>
                     )}
                   </CardContent>
                 </Card>

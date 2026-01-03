@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Sparkles, Loader2, AlertCircle } from "lucide-react"
 import { EmployeeInsights } from "./employee-insights"
 import { ManagerInsights } from "./manager-insights"
-import { mockUsers, mockTasks, type User } from "@/lib/mock-data"
+import { mockUsers, mockEntries, type User } from "@/lib/mock-data"
 
 export function AIInsights() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
@@ -20,7 +20,6 @@ export function AIInsights() {
     const mockUser = localStorage.getItem("mockUser")
     if (mockUser) {
       const userData = JSON.parse(mockUser)
-      // This fixes the bug where manager@company.com wasn't being recognized as manager
       const user: User = {
         id: userData.role === "manager" ? "user-4" : "user-1",
         email: userData.email,
@@ -43,7 +42,7 @@ export function AIInsights() {
         body: JSON.stringify({
           userId: currentUser?.id,
           role: currentUser?.role,
-          tasks: mockTasks,
+          entries: mockEntries,
           users: mockUsers,
         }),
       })
@@ -76,21 +75,21 @@ export function AIInsights() {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="border-border/60">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <Sparkles className="h-5 w-5 text-primary" />
-            Generate AI Insights
+            Generate Insights
           </CardTitle>
           <CardDescription>
             {currentUser.role === "employee"
-              ? "Get personalized insights about your tasks for today and overall progress"
-              : "Get team summaries and performance insights for weekly and monthly periods"}
+              ? "Get qualitative reflections on your recent work and patterns"
+              : "Get team summaries and qualitative insights about work patterns"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
-            <Button onClick={handleGenerateInsights} disabled={loading} size="lg" className="gap-2">
+            <Button onClick={handleGenerateInsights} disabled={loading} className="gap-2">
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -103,7 +102,7 @@ export function AIInsights() {
                 </>
               )}
             </Button>
-            <p className="text-sm text-muted-foreground">Click to consume AI tokens and generate insights</p>
+            <p className="text-sm text-muted-foreground">This will use AI tokens to analyze your work logs</p>
           </div>
 
           {error && (
@@ -118,9 +117,12 @@ export function AIInsights() {
       {insights && (
         <>
           {currentUser.role === "employee" ? (
-            <EmployeeInsights insights={insights} tasks={mockTasks.filter((t) => t.employeeId === currentUser.id)} />
+            <EmployeeInsights
+              insights={insights}
+              entries={mockEntries.filter((e) => e.employeeId === currentUser.id)}
+            />
           ) : (
-            <ManagerInsights insights={insights} users={mockUsers} tasks={mockTasks} teamMembers={teamMembers} />
+            <ManagerInsights insights={insights} users={mockUsers} entries={mockEntries} teamMembers={teamMembers} />
           )}
         </>
       )}
